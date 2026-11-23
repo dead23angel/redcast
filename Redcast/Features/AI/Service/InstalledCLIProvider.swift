@@ -61,6 +61,8 @@ private final class InstalledCLITurnRunner {
     private var turnSessionID: String?
     private var runsOnPlan = false
     private var heldTokens: Int?
+    private var receivedText = false
+    private var childProcesses: [ProcessTree.Member] = []
     /// Every file is the turn's own and private: its prompt, its MCP secrets, its pictures.
     private var privateFiles: [URL] = []
     private var activeExecutable: URL?
@@ -148,6 +150,7 @@ private final class InstalledCLITurnRunner {
             return
         }
         cancelActiveTurn()
+        receivedText = false
         do {
             try FileManager.default.createDirectory(at: workspace, withIntermediateDirectories: true)
             try FileManager.default.setAttributes(
@@ -270,6 +273,17 @@ private final class InstalledCLITurnRunner {
         input = stdin.fileHandleForWriting
         // A child that exits before reading must fail the write, not SIGPIPE Redcast.
         _ = fcntl(stdin.fileHandleForWriting.fileDescriptor, F_SETNOSIGPIPE, 1)
+        if kind == .antigravity {
+            do {
+                let data = try JSONSerialization.data(withJSONObject: [
+                    "event": "user", "message": ["content": prompt]
+                ])
+                write(data + Data([0x0A]), closing: true)
+            } catch {
+                fail(String(localized: "Redcast could not frame the request for \(kind.title)."))
+            }
+            return
+        }
         guard kind == .claude else {
             write(Data(prompt.utf8), closing: true)
             return
@@ -413,6 +427,14 @@ private final class InstalledCLITurnRunner {
                 "--output-format", "stream-json",
                 "--stream-partial-output"
             ]
+        case .antigravity:
+            var result = [
+                "--input-format", "stream-json", "--output-format", "stream-json",
+                "--model", model, "--disable-slash-commands",
+                "--settings", #"{"toolPermission":"strict","disableSlashCommands":true}"#
+            ]
+            if let effort { result += ["--effort", effort] }
+            return result
         case .codex:
             return []
         }
@@ -452,6 +474,9 @@ private final class InstalledCLITurnRunner {
 
     private func consume(_ data: Data, token: TurnToken) {
         guard self.token === token else { return }
+        if kind == .antigravity, let process, process.isRunning {
+            childProcesses = ProcessTree.members(under: process.processIdentifier)
+        }
         outputBuffer.append(data)
         while let newline = outputBuffer.firstIndex(of: 0x0A) {
             let line = outputBuffer[..<newline]
@@ -493,7 +518,14 @@ private final class InstalledCLITurnRunner {
             }
             return
         }
-        for event in frame.events { continuation?.yield(settled(event)) }
+        for event in frame.events {
+            if case .text(let text) = event, !text.isEmpty { receivedText = true }
+            continuation?.yield(settled(event))
+        }
+        if !receivedText, let text = frame.finalText, !text.isEmpty {
+            continuation?.yield(.text(text))
+            receivedText = true
+        }
         if frame.stoppedAtRoundCap {
             fail(
                 roundCap.map { String(localized: "Stopped after \($0) rounds of tool calls.") }
@@ -573,7 +605,7 @@ private final class InstalledCLITurnRunner {
     private func fail(_ message: String) {
         continuation?.finish(throwing: AIProviderError.responseFailed(message))
         continuation = nil
-        process?.terminate()
+        terminateProcess()
     }
 
     private func cancel(_ token: TurnToken) {
@@ -585,10 +617,19 @@ private final class InstalledCLITurnRunner {
         cancelConsents()
         continuation?.finish(throwing: CancellationError())
         continuation = nil
-        process?.terminate()
+        terminateProcess()
         outputBuffer.removeAll(keepingCapacity: false)
         errorBuffer.removeAll(keepingCapacity: false)
         removePrivateFiles()
+    }
+
+    private func terminateProcess() {
+        guard let process else { return }
+        if kind == .antigravity {
+            let members = ProcessTree.members(under: process.processIdentifier) + childProcesses
+            ProcessTree.reap(members, root: process)
+        }
+        if process.isRunning { process.terminate() }
     }
 
     private func removePrivateFiles() {
@@ -616,7 +657,7 @@ private final class InstalledCLITurnRunner {
         case .cursor:
             let root = Self.cursorChatsRoot()
             Task.detached { Self.deleteCursorChat(sessionID, root: root) }
-        case .claude, .codex:
+        case .claude, .codex, .antigravity:
             break
         }
     }
@@ -657,6 +698,8 @@ private final class InstalledCLITurnRunner {
     }
 
     private func cleanup() {
+        if kind == .antigravity { ProcessTree.reap(childProcesses, root: process) }
+        childProcesses = []
         cancelConsents()
         process?.terminationHandler = nil
         (process?.standardOutput as? Pipe)?.fileHandleForReading.readabilityHandler = nil

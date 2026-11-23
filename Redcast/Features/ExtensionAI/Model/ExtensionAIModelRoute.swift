@@ -38,7 +38,7 @@ enum ExtensionAIModelRoute {
         case .codex: return .openAI
         case .claude: return .claude
         case .grok: return .x
-        case .openCode(let model, _), .cursor(let model, _): return AIBrand.resolve(model: model)
+        case .openCode(let model, _), .cursor(let model, _), .antigravity(let model, _): return AIBrand.resolve(model: model)
         case .api(let id, let model, _):
             guard let connection = connections.first(where: { $0.id == id }) else {
                 return AIBrand.resolve(model: model)

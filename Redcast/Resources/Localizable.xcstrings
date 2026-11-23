@@ -20004,7 +20004,7 @@
         }
       }
     },
-    "A .tinycast file exported from Redcast." : {
+    "A .redcast file exported from Redcast." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -155683,7 +155683,7 @@
         }
       }
     },
-    "The ticked items, as one .tinycast file." : {
+    "The ticked items, as one .redcast file." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {

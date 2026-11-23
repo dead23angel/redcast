@@ -5,6 +5,7 @@ struct InstalledAIStreamFrame: Equatable, Sendable {
     var sessionID: String?
     var error: String?
     var completed = false
+    var finalText: String?
     /// A tool call the CLI is holding open; the runner answers it and the turn carries on.
     var controlRequest: ClaudeControlProtocol.Request?
     var unsupportedRequestID: String?
@@ -20,16 +21,47 @@ enum InstalledAIStreamDecoder {
     static func decode(
         _ data: Data, kind: InstalledAIKind, servers: [AIToolServer] = []
     ) -> InstalledAIStreamFrame {
-        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-            let type = object["type"] as? String
+        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
         else { return InstalledAIStreamFrame() }
+        if kind == .antigravity { return antigravity(object) }
+        guard let type = object["type"] as? String else { return InstalledAIStreamFrame() }
         switch kind {
         case .openCode: return openCode(object, type: type)
         case .claude: return claude(object, type: type, servers: servers)
         case .cursor: return cursor(object, type: type)
         case .grok: return grok(object, type: type)
-        case .codex: return InstalledAIStreamFrame()
+        case .codex, .antigravity: return InstalledAIStreamFrame()
         }
+    }
+
+    private static func antigravity(_ object: [String: Any]) -> InstalledAIStreamFrame {
+        var frame = InstalledAIStreamFrame()
+        switch object["event"] as? String {
+        case "step_update":
+            guard let step = object["step_update"] as? [String: Any],
+                step["step_type"] as? String == "agent_response",
+                let delta = step["text_delta"] as? String, !delta.isEmpty
+            else { return frame }
+            frame.events = [.text(delta)]
+        case "result":
+            guard let result = object["result"] as? [String: Any] else { return frame }
+            guard result["status"] as? String == "SUCCESS" else {
+                frame.error = result["error"] as? String
+                    ?? String(localized: "\(InstalledAIKind.antigravity.title) could not finish the response.")
+                return frame
+            }
+            if let usage = result["usage"] as? [String: Any] {
+                frame.events = [.usage(AIUsage(
+                    inputTokens: integer(usage["input_tokens"]),
+                    outputTokens: integer(usage["output_tokens"]),
+                    cachedInputTokens: integer(usage["cache_read_tokens"]),
+                    reasoningTokens: integer(usage["thinking_tokens"])))]
+            }
+            frame.finalText = result["response"] as? String
+            frame.completed = true
+        default: break
+        }
+        return frame
     }
 
     /// No line closes the stream: the runner takes a clean exit as the finish.

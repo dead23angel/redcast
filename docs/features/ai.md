@@ -37,7 +37,7 @@ bottom with the model picker. ⌘J hands a Quick AI conversation to the window.
   `ai-chats.sqlite3` nor a Keychain key. `aiEnabled` is excluded from settings backups like every
   other AI key, so an import can never arm a feature it cannot configure.
 - **Installed model discovery is per-provider.** Settings → AI → Providers keeps Codex, Claude, Grok,
-  OpenCode and Cursor visible with an individual toggle for each, all off by default. Turning one off cancels
+  OpenCode, Cursor and Antigravity visible with an individual toggle for each, all off by default. Turning one off cancels
   its check, clears its catalog and releases its process; Apple Intelligence is the default route when
   available, and saved API connections stay available.
 - **A route that is off is off everywhere.** The on-device model and every API connection have the
@@ -788,7 +788,7 @@ window, and every chat action either surface sends — is the nineteenth feature
 
 ## Installed commands
 
-`ExecutableLocator` finds `codex`, `claude`, `grok`, `opencode` and `agent` by asking the account's
+`ExecutableLocator` finds `codex`, `claude`, `grok`, `opencode`, `agent` and `agy` by asking the account's
 login shell, so a stale copy in another prefix never shadows the one Terminal runs. zsh, bash and fish
 are asked in their own syntax, any other shell through zsh, and the answer comes back behind a marker,
 so an rc or logout file that prints cannot hide it. Only when the shell names no absolute executable does
@@ -814,6 +814,34 @@ its model list from the answer. OpenCode's successful model list is both its aut
 Grok's `models` output is the catalog, but a signed-out CLI still exits 0 and prints that catalog under
 "You are not authenticated." — that banner is the auth check, not the exit status. Cursor's
 `status --format json` gates `--list-models`.
+
+### Antigravity
+
+Antigravity is an opt-in installed provider using `agy` (tested with CLI 1.5.15). The provider's
+Overview, Models and Advanced tabs use the same discovery, visibility, command override and
+Keychain-backed environment settings as the other installed tools. Sign in through `agy acp --login`
+or an interactive CLI session; Redcast does not read or copy its credential files.
+
+`agy models` supplies tab-separated model IDs and names. A successful catalog check means models
+were listed, not that the account passed Google's generation eligibility checks. An account or
+regional restriction can still reject a turn; the CLI's error is shown in chat. No model request is
+made merely to refresh the catalog. Model-specific reasoning variants retain the IDs the CLI lists.
+
+Each turn uses `--input-format stream-json --output-format stream-json` with a JSON-framed prompt on
+stdin containing the supplied conversation and instructions. Responses use `step_update.text_delta`;
+the terminal `result` supplies usage and completion, with response text as a fallback only when no
+deltas arrived. Errors never become successful empty answers. The shared runner bounds output and
+cancels work; Antigravity's child processes are also reaped when the turn stops.
+
+This route is text-only: no image/document input, Redcast MCP tools or web-search capability is
+advertised. `--settings` enforces `toolPermission: strict` for this run, and headless requests cannot
+approve tool actions. Slash-command expansion is disabled. This does not isolate the CLI from its
+own global configuration, hooks or plugins; those remain the user's Antigravity configuration.
+CLI conversations may remain in Antigravity's own local history. Redcast does not delete that history.
+
+The `antigravity-cli-test` harness uses a temporary stand-in executable to verify discovery, launch
+flags, conversation framing, streaming, final-text fallback, errors and cancellation without calling
+a model. `ai-provider-test` covers persistence, disabled-route defaults and protocol decoding.
 
 `ChatGPTSubscriptionManager` retains its historical type name but now owns only the installed Codex
 app-server lifecycle and discovered account metadata. Production never sets `CODEX_HOME`, so the

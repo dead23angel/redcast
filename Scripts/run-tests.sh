@@ -842,6 +842,18 @@ run ai-provider-test       Redcast/Features/Settings/AppSettingsKey.swift \
                            Redcast/Features/ReasoningReplay/Model/*.swift \
                            Redcast/Features/Agents/Model/ChatToolContent.swift \
                            Redcast/Features/AI/Settings/AISettingsStore.swift
+run antigravity-cli-test   Redcast/Features/Settings/AppSettingsKey.swift \
+                           Redcast/Features/AI/Model/*.swift \
+                           Redcast/Features/ReasoningReplay/Model/*.swift \
+                           Redcast/Features/Agents/Model/ChatToolContent.swift \
+                           Redcast/Features/Agents/Service/ProcessTree.swift \
+                           Redcast/Features/AI/Service/AIProvider.swift \
+                           Redcast/Features/AI/Service/InstalledCLIProvider.swift \
+                           Redcast/Features/AI/Service/InstalledAIManager.swift \
+                           Redcast/Features/AI/Service/InstalledAIProbe.swift \
+                           Redcast/Platform/AppPaths.swift \
+                           Redcast/Platform/ExecutableLocator.swift \
+                           Redcast/Platform/ProcessExit.swift
 run ai-model-catalog-test  Redcast/Features/Settings/AppSettingsKey.swift \
                            Redcast/Features/AI/Model/*.swift \
                            Redcast/Features/ReasoningReplay/Model/*.swift \

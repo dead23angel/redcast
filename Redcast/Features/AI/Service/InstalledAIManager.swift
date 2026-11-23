@@ -316,6 +316,16 @@ final class InstalledAIManager {
                             String(localized: "Cursor returned no models.")),
                     version: version, executable: executable, models: catalog)
             )
+        case .antigravity:
+            let result = await InstalledAIProbe.run(
+                executable: executable, arguments: ["models"], workspace: workspace,
+                environment: environment, timeout: .seconds(30))
+            let models = InstalledAIModel.antigravityCatalog(result.output)
+            return (
+                kind,
+                InstalledAIStatus(
+                    phase: result.status == 0 && !models.isEmpty ? .ready : .signInRequired,
+                    version: version, executable: executable, models: models))
         case .codex:
             return (kind, InstalledAIStatus(phase: .idle))
         }

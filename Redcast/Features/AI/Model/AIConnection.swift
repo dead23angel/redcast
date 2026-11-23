@@ -191,6 +191,7 @@ enum AIModelSource: Codable, Equatable, Hashable, Sendable {
     case grok
     case openCode
     case cursor
+    case antigravity
     case api(UUID)
 }
 
@@ -204,6 +205,7 @@ extension AIModelSource {
         case .grok: return "grok"
         case .openCode: return "openCode"
         case .cursor: return "cursor"
+        case .antigravity: return "antigravity"
         case .api(let id): return "api:" + id.uuidString
         }
     }
@@ -216,13 +218,14 @@ enum AIModelSelection: Codable, Equatable, Hashable, Sendable {
     case grok(model: String, effort: String?)
     case openCode(model: String, effort: String?)
     case cursor(model: String, effort: String?)
+    case antigravity(model: String, effort: String?)
     case api(connection: UUID, model: String, effort: String?)
 
     /// The routes whose own client is the MCP client, handed servers rather than Redcast's loop.
     var runsItsOwnTools: Bool {
         switch self {
         case .codex, .claude: return true
-        case .appleIntelligence, .grok, .openCode, .cursor, .api: return false
+        case .appleIntelligence, .grok, .openCode, .cursor, .antigravity, .api: return false
         }
     }
 
@@ -234,6 +237,7 @@ enum AIModelSelection: Codable, Equatable, Hashable, Sendable {
         case .grok: return .grok
         case .openCode: return .openCode
         case .cursor: return .cursor
+        case .antigravity: return .antigravity
         case .api(let connection, _, _): return .api(connection)
         }
     }
@@ -242,7 +246,7 @@ enum AIModelSelection: Codable, Equatable, Hashable, Sendable {
         switch self {
         case .appleIntelligence: return AppleIntelligence.modelID
         case .codex(let model, _), .claude(let model, _), .grok(let model, _),
-            .openCode(let model, _), .cursor(let model, _), .api(_, let model, _):
+            .openCode(let model, _), .cursor(let model, _), .antigravity(let model, _), .api(_, let model, _):
             return model
         }
     }
@@ -250,7 +254,7 @@ enum AIModelSelection: Codable, Equatable, Hashable, Sendable {
     var effort: String? {
         switch self {
         case .codex(_, let effort), .claude(_, let effort), .grok(_, let effort),
-            .openCode(_, let effort), .cursor(_, let effort), .api(_, _, let effort):
+            .openCode(_, let effort), .cursor(_, let effort), .antigravity(_, let effort), .api(_, _, let effort):
             return effort
         case .appleIntelligence:
             return nil
@@ -264,6 +268,7 @@ enum AIModelSelection: Codable, Equatable, Hashable, Sendable {
         case .grok(let model, _): return .grok(model: model, effort: effort)
         case .openCode(let model, _): return .openCode(model: model, effort: effort)
         case .cursor(let model, _): return .cursor(model: model, effort: effort)
+        case .antigravity(let model, _): return .antigravity(model: model, effort: effort)
         case .api(let connection, let model, _):
             return .api(connection: connection, model: model, effort: effort)
         case .appleIntelligence: return self
@@ -281,6 +286,7 @@ enum AIModelSelection: Codable, Equatable, Hashable, Sendable {
         case grok
         case openCode
         case cursor
+        case antigravity
         case api
     }
 
@@ -332,6 +338,13 @@ enum AIModelSelection: Codable, Equatable, Hashable, Sendable {
                 effort: try value.decodeIfPresent(String.self, forKey: .effort))
             return
         }
+        if container.contains(.antigravity) {
+            let value = try container.nestedContainer(keyedBy: ValueKeys.self, forKey: .antigravity)
+            self = .antigravity(
+                model: try value.decode(String.self, forKey: .model),
+                effort: try value.decodeIfPresent(String.self, forKey: .effort))
+            return
+        }
         let value = try container.nestedContainer(keyedBy: ValueKeys.self, forKey: .api)
         self = .api(
             connection: try value.decode(UUID.self, forKey: .connection),
@@ -362,6 +375,10 @@ enum AIModelSelection: Codable, Equatable, Hashable, Sendable {
             try value.encodeIfPresent(effort, forKey: .effort)
         case .cursor(let model, let effort):
             var value = container.nestedContainer(keyedBy: ValueKeys.self, forKey: .cursor)
+            try value.encode(model, forKey: .model)
+            try value.encodeIfPresent(effort, forKey: .effort)
+        case .antigravity(let model, let effort):
+            var value = container.nestedContainer(keyedBy: ValueKeys.self, forKey: .antigravity)
             try value.encode(model, forKey: .model)
             try value.encodeIfPresent(effort, forKey: .effort)
         case .api(let connection, let model, let effort):

@@ -156,6 +156,7 @@ struct AIProviderTests {
         temperatureIsSentOnlyWhenAsked()
         codexProtocolFramesRoundTrip()
         installedCLIStreamsDecode()
+        antigravityProvider()
         settingsPersistAndRepairSelections()
         installedModelLoadingPreferencePersists()
         shownModelsFilterThePicker()
@@ -2675,6 +2676,58 @@ struct AIProviderTests {
             "an installed catalog replaces a model alias that disappeared")
         store.reconcile(installed: .claude, models: [], isUnavailable: true)
         expect(store.defaultModel == nil, "signing out clears an unusable Claude default")
+    }
+
+    static func antigravityProvider() {
+        let selection = AIModelSelection.antigravity(model: "gemini-test", effort: nil)
+        let data = try? JSONEncoder().encode(selection)
+        expect(data.flatMap { try? JSONDecoder().decode(AIModelSelection.self, from: $0) } == selection,
+               "Antigravity selections survive persistence")
+        let models = InstalledAIModel.antigravityCatalog(
+            "Fetching available models...\ngemini-test\tGemini Test\ngemini-test\tDuplicate\nerror: unavailable")
+        expect(models.map(\.id) == ["gemini-test"], "catalog rejects diagnostics and duplicate models")
+        expect(InstalledAIModel.antigravityCatalog("authentication required").isEmpty,
+               "an auth error cannot become a model")
+        let delta = Data(#"{"event":"step_update","step_update":{"step_type":"agent_response","text_delta":"Hello"}}"#.utf8)
+        expect(InstalledAIStreamDecoder.decode(delta, kind: .antigravity).events == [.text("Hello")],
+               "Antigravity streams incremental answer text")
+        let tool = Data(#"{"event":"step_update","step_update":{"step_type":"tool","text_delta":"private"}}"#.utf8)
+        expect(InstalledAIStreamDecoder.decode(tool, kind: .antigravity).events.isEmpty,
+               "tool output is not assistant prose")
+        let done = Data(
+            """
+            {
+              "event": "result",
+              "result": {
+                "status": "SUCCESS",
+                "response": "Hello",
+                "usage": {
+                  "input_tokens": 12,
+                  "output_tokens": 5,
+                  "thinking_tokens": 2,
+                  "cache_read_tokens": 3
+                }
+              }
+            }
+            """.utf8)
+        let frame = InstalledAIStreamDecoder.decode(done, kind: .antigravity)
+        expect(frame.completed && frame.finalText == "Hello", "result closes a turn and retains text-only fallback")
+        expect(frame.events == [.usage(AIUsage(inputTokens: 12, outputTokens: 5, cachedInputTokens: 3,
+                                              reasoningTokens: 2))], "result reports usage once")
+        let error = Data(#"{"event":"result","result":{"status":"ERROR","error":"Not available in your location"}}"#.utf8)
+        let failure = InstalledAIStreamDecoder.decode(error, kind: .antigravity)
+        expect(!failure.completed && failure.error == "Not available in your location",
+               "eligibility errors are surfaced, never reported as successful answers")
+        let suite = "AIProviderTests.antigravity"
+        let defaults = isolatedDefaults(suite)
+        defer { discardSuite(suite, defaults) }
+        let store = AISettingsStore(defaults: defaults)
+        expect(!store.isRouteEnabled(.antigravity), "Antigravity is opt-in")
+        store.select(.antigravity(model: "removed", effort: "high"))
+        store.reconcile(installed: .antigravity, models: models, isUnavailable: false)
+        expect(store.defaultModel == selection, "Antigravity reconciles a missing model and unsupported effort")
+        store.disableInstalledModelSelection(for: .antigravity)
+        expect(store.defaultModel?.source != .antigravity, "disabled Antigravity loses its default selection")
     }
 
     static func installedCLIStreamsDecode() {

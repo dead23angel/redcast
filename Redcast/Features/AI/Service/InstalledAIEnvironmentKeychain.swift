@@ -18,6 +18,7 @@ extension InstalledAIKind {
             case .claude: "06C43DBE-F304-4E64-BBC5-F4A2AB00264B"
             case .grok: "83C70D38-66BE-4D64-8F1F-BC54FBF83E6B"
             case .openCode: "AF4DC1E6-7D9C-4C65-B278-CDB141C89DD3"
+            case .antigravity: "51C56286-9D49-4FDE-9B69-339CCDC47510"
             case .cursor: "76B444D9-4617-45C8-A3E1-71A977C49D8D"
             }
         return UUID(uuidString: value) ?? UUID()

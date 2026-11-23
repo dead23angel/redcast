@@ -6,9 +6,9 @@ enum InstalledAIKind: String, CaseIterable, Codable, Identifiable, Sendable {
     case grok
     case openCode
     case cursor
+    case antigravity
 
-    /// Claude, Grok, OpenCode and Cursor — Codex uses its app-server instead.
-    static let managedCLIKinds: [InstalledAIKind] = [.claude, .grok, .openCode, .cursor]
+    static let managedCLIKinds: [InstalledAIKind] = [.claude, .grok, .openCode, .cursor, .antigravity]
 
     var id: String { rawValue }
 
@@ -22,6 +22,7 @@ enum InstalledAIKind: String, CaseIterable, Codable, Identifiable, Sendable {
         case .grok: return "Grok"
         case .openCode: return "OpenCode"
         case .cursor: return "Cursor"
+        case .antigravity: return "Antigravity"
         }
     }
 
@@ -32,6 +33,7 @@ enum InstalledAIKind: String, CaseIterable, Codable, Identifiable, Sendable {
         case .grok: return "grok"
         case .openCode: return "opencode"
         case .cursor: return "agent"
+        case .antigravity: return "agy"
         }
     }
 
@@ -41,6 +43,7 @@ enum InstalledAIKind: String, CaseIterable, Codable, Identifiable, Sendable {
         case .claude: return URL(string: "https://code.claude.com/docs/en/setup")!
         case .grok: return URL(string: "https://x.ai/cli")!
         case .openCode: return URL(string: "https://opencode.ai/v2/docs")!
+        case .antigravity: return URL(string: "https://antigravity.google/docs/cli/install")!
         case .cursor: return URL(string: "https://cursor.com/docs/cli/overview")!
         }
     }
@@ -50,7 +53,7 @@ enum InstalledAIKind: String, CaseIterable, Codable, Identifiable, Sendable {
         switch self {
         case .claude: return [".claude/local/claude"]
         case .grok: return [".grok/bin/grok"]
-        case .codex, .openCode, .cursor: return []
+        case .codex, .openCode, .cursor, .antigravity: return []
         }
     }
 
@@ -61,6 +64,7 @@ enum InstalledAIKind: String, CaseIterable, Codable, Identifiable, Sendable {
         case .grok: return .grok
         case .openCode: return .openCode
         case .cursor: return .cursor
+        case .antigravity: return .antigravity
         }
     }
 
@@ -71,7 +75,7 @@ enum InstalledAIKind: String, CaseIterable, Codable, Identifiable, Sendable {
         case .claude:
             return hasManagedMCPPolicy
                 ? String(localized: "Claude’s MCP configuration is managed by your organization.") : nil
-        case .codex, .grok, .openCode: return nil
+        case .codex, .grok, .openCode, .antigravity: return nil
         }
     }
 
@@ -82,6 +86,7 @@ enum InstalledAIKind: String, CaseIterable, Codable, Identifiable, Sendable {
         case .grok: return "grok login"
         case .openCode: return "opencode auth login"
         case .cursor: return "agent login"
+        case .antigravity: return "agy acp --login"
         }
     }
 }
@@ -95,6 +100,7 @@ extension AIModelSource {
         case .grok: return .grok
         case .openCode: return .openCode
         case .cursor: return .cursor
+        case .antigravity: return .antigravity
         case .appleIntelligence, .api: return nil
         }
     }
@@ -105,6 +111,18 @@ struct InstalledAIModel: Equatable, Identifiable, Sendable {
     let name: String
     let efforts: [ChatGPTSubscription.Effort]
     let acceptsImages: Bool
+
+    static func antigravityCatalog(_ output: String) -> [InstalledAIModel] {
+        var seen: Set<String> = []
+        return output.split(whereSeparator: \.isNewline).compactMap { line in
+            let fields = line.split(separator: "\t", maxSplits: 1).map(String.init)
+            guard fields.count == 2, !fields[0].isEmpty, !fields[1].isEmpty,
+                fields[0].allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber || "-_.".contains($0)) }),
+                seen.insert(fields[0]).inserted
+            else { return nil }
+            return InstalledAIModel(id: fields[0], name: fields[1])
+        }
+    }
 
     init(
         id: String, name: String, efforts: [ChatGPTSubscription.Effort] = [],

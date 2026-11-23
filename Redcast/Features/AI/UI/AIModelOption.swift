@@ -18,6 +18,7 @@ struct AIModelOption: Identifiable {
         let grok = installedAI.status(for: .grok)
         let openCode = installedAI.status(for: .openCode)
         let cursor = installedAI.status(for: .cursor)
+        let antigravity = installedAI.status(for: .antigravity)
         // The default stays listed even when unticked, or the picker could not show what it holds.
         func shown(_ model: String, _ source: AIModelSource) -> Bool {
             settings.isModelShown(model, in: source)
@@ -36,6 +37,8 @@ struct AIModelOption: Identifiable {
             openCode: enabled.contains(.openCode) && openCode.isReady
                 ? shown(openCode.models, .openCode) : [],
             cursor: enabled.contains(.cursor) && cursor.isReady ? shown(cursor.models, .cursor) : [],
+            antigravity: enabled.contains(.antigravity) && antigravity.isReady
+                ? shown(antigravity.models, .antigravity) : [],
             connections: settings.connections.compactMap { connection in
                 guard settings.isRouteEnabled(.api(connection.id)) else { return nil }
                 var trimmed = connection
@@ -59,6 +62,7 @@ struct AIModelOption: Identifiable {
         grok: [InstalledAIModel],
         openCode: [InstalledAIModel],
         cursor: [InstalledAIModel],
+        antigravity: [InstalledAIModel],
         connections: [AIConnection]
     ) -> [AIModelOption] {
         let onDevice =
@@ -95,6 +99,11 @@ struct AIModelOption: Identifiable {
                 selection: .cursor(model: model.id, effort: nil), title: model.name,
                 sourceTitle: "Cursor", menuIcon: cursorIcon)
         }
+        let antigravity = antigravity.map { model in
+            AIModelOption(
+                selection: .antigravity(model: model.id, effort: nil), title: model.name,
+                sourceTitle: "Antigravity", menuIcon: .symbol("sparkles"))
+        }
         let api = connections.flatMap { connection in
             connection.models.map { model in
                 AIModelOption(
@@ -104,7 +113,7 @@ struct AIModelOption: Identifiable {
                     menuIcon: icon(AIBrand.resolve(provider: connection.provider, model: model)))
             }
         }
-        return onDevice + codex + claude + grok + openCode + cursor + api
+        return onDevice + codex + claude + grok + openCode + cursor + antigravity + api
     }
 
     private static func groupedCatalog(
@@ -114,12 +123,13 @@ struct AIModelOption: Identifiable {
         grok: [InstalledAIModel],
         openCode: [InstalledAIModel],
         cursor: [InstalledAIModel],
+        antigravity: [InstalledAIModel],
         connections: [AIConnection]
     ) -> [AIModelOptionGroup] {
         var groups: [AIModelOptionGroup] = []
         for option in catalog(
             appleIntelligence: appleIntelligence, codex: codex, claude: claude, grok: grok,
-            openCode: openCode, cursor: cursor, connections: connections)
+            openCode: openCode, cursor: cursor, antigravity: antigravity, connections: connections)
         {
             if groups.last?.id == option.selection.source {
                 groups[groups.count - 1].options.append(option)
@@ -146,7 +156,7 @@ struct AIModelOption: Identifiable {
             return selection
         case .codex:
             effort = subscription.models.first { $0.id == model }?.resolvedEffort(nil)
-        case .claude, .grok, .openCode, .cursor:
+        case .claude, .grok, .openCode, .cursor, .antigravity:
             effort = installedAI.models(for: selection.source)
                 .first { $0.id == model }?.resolvedEffort(nil)
         case .api(let connection):
@@ -168,7 +178,7 @@ struct AIModelOption: Identifiable {
             return []
         case .codex:
             return subscription.models.first { $0.id == model }?.efforts ?? []
-        case .claude, .grok, .openCode, .cursor:
+        case .claude, .grok, .openCode, .cursor, .antigravity:
             return installedAI.models(for: selection.source).first { $0.id == model }?.efforts ?? []
         case .api(let connection):
             return settings.connection(id: connection)?.reasoningOptions(for: model)?

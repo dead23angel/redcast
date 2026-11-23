@@ -731,6 +731,7 @@ struct AIProvidersPanel: View {
         case .installed(.claude): return .asset(AIBrand.claude.assetName)
         case .installed(.grok): return .asset(AIBrand.grok.assetName)
         case .installed(.openCode): return .asset(AIBrand.openCode.assetName)
+        case .installed(.antigravity): return .symbol("sparkles")
         case .installed(.cursor): return AIModelOption.cursorIcon
         case .api(let id):
             guard let connection = settings.connection(id: id) else { return .symbol("sparkles") }

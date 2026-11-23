@@ -68,6 +68,19 @@ and AppKit, stays under 100 MB and does nothing while you're not using it.
   </tr>
 </table>
 
+## Antigravity provider
+
+This fork also adds **Antigravity** to Settings → AI → Providers. Install the official
+[Antigravity CLI](https://antigravity.google/docs/cli/install), sign in with `agy acp --login`,
+then enable Antigravity and choose a model. Redcast reuses the CLI's login and streams text replies
+through its documented headless protocol. The CLI command path can be overridden in Advanced.
+
+The provider supports text chats and conversation history, model discovery and cancellation.
+Images, Redcast MCP tools and web search are not offered on this route. CLI tool permissions are
+set to strict for each run; the CLI still inherits its own configuration, hooks and plugins.
+A listed model does not guarantee account or regional eligibility: Google may reject generation,
+and Redcast displays that error. See [implementation and limitations](docs/features/ai.md#antigravity).
+
 ## Intel build and verification
 
 This fork provides an experimental **Intel (x86_64) development build**. It was built with

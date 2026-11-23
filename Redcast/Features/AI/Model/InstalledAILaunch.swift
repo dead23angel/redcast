@@ -88,7 +88,7 @@ extension InstalledAIKind {
             return ["OPENCODE_CONFIG_CONTENT": Self.openCodeConfiguration]
         case .grok:
             return ["GROK_DISABLE_AUTOUPDATER": "1", "GROK_AGENT_DASHBOARD": "0"]
-        case .cursor, .codex:
+        case .cursor, .codex, .antigravity:
             return [:]
         }
     }

@@ -49,6 +49,7 @@ enum AIModelCatalog {
             let parts = model.split(separator: "/", maxSplits: 1).map(String.init)
             let window = parts.count == 2 ? tables.models[parts[0]]?[parts[1]]?.window : nil
             return AIRouteFacts(billing: .ownReport, window: window)
+        case .antigravity: return AIRouteFacts(billing: .undetermined)
         case .claude:
             return AIRouteFacts(billing: .ownReport)
         case .codex, .cursor, .appleIntelligence, nil:
