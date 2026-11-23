@@ -1,3 +1,8 @@
+> **Intel development fork:** this branch adds experimental x86_64 support for macOS 26.
+> See [Intel build and verification](#intel-build-and-verification) below. The upstream download,
+> Homebrew and notarization information on this page describes the Apple-silicon release,
+> not an Intel release from this fork.
+
 <p align="center">
   <a href="https://redcast.io"><img src="docs/brand/redcast-banner.jpg" alt="Redcast: the palette with “sttngs” typed, System Settings found and the ⌘K action menu open" width="100%"></a>
 </p>
@@ -62,6 +67,54 @@ and AppKit, stays under 100 MB and does nothing while you're not using it.
     </td>
   </tr>
 </table>
+
+## Intel build and verification
+
+This fork provides an experimental **Intel (x86_64) development build**. It was built with
+Xcode 26.5 (17F42) and tested on an Intel Mac running macOS 26.7.3.
+
+```sh
+git clone --branch codex/intel-build https://github.com/dead23angel/redcast.git
+cd redcast
+./Scripts/build-intel.sh
+```
+
+The script creates `build/Intel/Build/Products/Debug/Redcast Dev.app` and verifies the x86_64
+architecture of the app and its embedded helpers. This is an **unsigned compile check**;
+for installation and persistent macOS permissions, use a signed development build as described
+in [Development](docs/development.md#experimental-intel-build) and [Signing](docs/signing.md).
+The Dev channel has separate settings and permissions and does not install upstream updates.
+No notarized Intel release is provided by this change.
+
+### What changed
+
+- Extensions receive `x64` from `process.arch` and `os.arch()` on Intel, with regression assertions.
+- The palette observer chain is split to compile within Xcode 26.5's type-checker budget.
+- The dictation inference test uses portable fixtures while still testing float16 Core ML tensors.
+- A dedicated script makes the Intel build and binary architecture checks reproducible.
+
+### Verified on Intel
+
+Manual checks covered launcher hotkeys, application search and launch, the calculator, file search
+with preview and opening, text clipboard history and paste, window positioning and restoration,
+and settings persistence after restarting the app. Snippet creation and insertion through the
+launcher passed; keyword expansion was also confirmed manually by the tester.
+
+The UUID Generator extension was installed from the Raycast Store and its generation and history
+commands worked. Codex was connected through a locally installed CLI: model discovery and a real
+chat response passed. These are checks of existing features, not new provider implementations.
+
+Automated verification covered 139 harnesses: 138 passed in the full run; the remaining dictation
+inference harness passed after fixing its Intel compilation issue. The Debug build passed, and
+SwiftLint 0.65.1 completed with no errors (existing warnings remain). Model-layer import checks
+found no AppKit, SwiftUI or Cocoa imports.
+
+### Limits of this verification
+
+Apple Intelligence is unavailable on Intel. Local dictation model loading and performance were
+not tested. Image clipboard workflows, other AI providers, extensions with architecture-specific
+native dependencies, and extended sleep/wake or stability testing remain unverified. This is
+basic workflow validation on one Intel Mac, not a claim of complete Apple-silicon feature parity.
 
 ## Install
 

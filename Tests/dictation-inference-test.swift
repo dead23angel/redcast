@@ -3,16 +3,16 @@ import Foundation
 @main
 struct DictationInferenceTest {
     static func main() throws {
-        var tied = [Float16](repeating: -1, count: 64)
+        var tied = [Float](repeating: -1, count: 64)
         tied[7] = 4
         tied[32] = 4
-        var wide = [Float16](repeating: -1, count: 151936)
+        var wide = [Float](repeating: -1, count: 151936)
         wide[151934] = 4
-        let fixtures: [[Float16]] = [[-5, -1, -1, -3], [4, 4, -2], [-2, 0, 3], [7], tied, wide]
+        let fixtures: [[Float]] = [[-5, -1, -1, -3], [4, 4, -2], [-2, 0, 3], [7], tied, wide]
         for values in fixtures {
             let scores = try DictationTensor.zeros([1, 1, values.count], type: .float16)
-            scores.withUnsafeMutableBufferPointer(ofType: Float16.self) { buffer, _ in
-                _ = buffer.update(from: values)
+            for (index, value) in values.enumerated() {
+                scores[index] = NSNumber(value: value)
             }
             let expected = values.indices.reduce(0) { values[$1] > values[$0] ? $1 : $0 }
             guard try DictationTensor.indexOfMaximum(in: scores) == expected else {

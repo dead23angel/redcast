@@ -49,6 +49,29 @@ Dictation similarly embeds its Swift/Core ML helper, named `Redcast Dev Dictatio
 `Redcast Dictation` in Release, in an accessory `.app` bundle without a bundled icon. Model weights
 download on demand; none are app resources.
 
+### Experimental Intel build
+
+This fork includes an experimental x86_64 development build for macOS 26, compiled locally
+with Xcode 26.5 (17F42):
+
+```sh
+./Scripts/build-intel.sh
+```
+
+The script builds the app and all embedded helpers into
+`build/Intel/Build/Products/Debug/Redcast Dev.app`. It disables code signing for the compile
+check; it does not install, launch, notarize or grant permissions to the app. Use the signing
+setup above for persistent Accessibility permissions when testing repeated local builds.
+The development channel never replaces itself with an upstream Apple-silicon release.
+Extensions receive Node's `x64` architecture value on Intel and `arm64` on Apple silicon.
+The palette's observer chain is split to stay within Xcode 26.5's type-checker budget.
+The dictation inference harness fills half-precision Core ML tensors through `NSNumber`,
+so it does not require Swift's Apple-silicon-only `Float16` type.
+
+Apple Intelligence is unavailable on Intel; use a configured external AI provider instead.
+Local Core ML dictation still needs separate model-loading and performance tests on Intel.
+A successful compile alone does not establish feature parity with Apple silicon.
+
 ### The dev channel
 
 Debug builds are a separate channel: **`Redcast Dev.app`**, bundle id `io.redcast.app.dev`. Every

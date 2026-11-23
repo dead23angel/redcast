@@ -31,8 +31,14 @@ struct ExtensionBootConfig: Sendable {
         let groupCount = getgroups(Int32(groups.count), &groups)
         groups = Array(groups.prefix(Int(max(groupCount, 0))))
 
+        #if arch(x86_64)
+            let architecture = "x64"
+        #else
+            let architecture = "arm64"
+        #endif
+
         return ExtensionBootConfig(
-            arch: "arm64",
+            arch: architecture,
             release: info.operatingSystemVersionString,
             hostname: info.hostName,
             username: NSUserName(),

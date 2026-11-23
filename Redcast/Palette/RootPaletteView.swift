@@ -399,7 +399,7 @@ struct RootPaletteView: View {
 
     /// Split from `body` for the same reason `keyHandlers` is: one chain cannot carry them all.
     @ViewBuilder
-    private func stateObservers(_ content: some View) -> some View {
+    private func queryObservers(_ content: some View) -> some View {
         emojiObservers(content)
             // Every show bumps focusToken so the search field refocuses.
             .onChange(of: vm.focusToken) {
@@ -466,6 +466,11 @@ struct RootPaletteView: View {
                     Task { await extensions.stop() }
                 }
             }
+    }
+
+    @ViewBuilder
+    private func stateObservers(_ content: some View) -> some View {
+        queryObservers(content)
             // `prepare` may change nothing else, so this still lands the list as freshly opened.
             .onChange(of: vm.resetToken) {
                 if menuOpen { closeMenus() }

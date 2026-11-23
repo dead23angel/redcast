@@ -1211,8 +1211,16 @@ struct ExtensionTests {
             return
         }
 
+        #if arch(x86_64)
+            let expectedArchitecture = "x64"
+        #else
+            let expectedArchitecture = "arm64"
+        #endif
+
         let command = """
             "use strict";
+            require("node:assert").equal(process.arch, "\(expectedArchitecture)");
+            require("node:assert").equal(require("node:os").arch(), "\(expectedArchitecture)");
             const { List, ActionPanel, Action, Icon, showToast, Toast } = require("@raycast/api");
             const React = require("react");
             const path = require("node:path");
